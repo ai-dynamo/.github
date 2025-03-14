@@ -4,6 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 # NVIDIA Dynamo
+
 [Dynamo](https://github.com/ai-dynamo/dynamo) is a new modular inference framework designed for serving large language models (LLMs) in multi-node distributed environments. It enables seamless scaling of inference workloads across GPU nodes and the dynamic allocation of GPU workers to address traffic bottlenecks at various stages of the model pipeline.
 
 This GitHub organization hosts repositories for Dynamo's core components and integrations, including:
@@ -27,7 +28,7 @@ This GitHub organization hosts repositories for Dynamo's core components and int
 
 ## Getting Started
 
-To learn more about NVIDIA Dynamo Inference Serving Platform, please refer to the [Dynamo developer page](TBD) and read our [Quickstart Guide](TBD) for container setup and basic workflows.
+To learn more about NVIDIA Dynamo Inference Serving Platform, please refer to the [Dynamo developer page](https://developer.nvidia.com/dynamo) and read our [Quickstart Guide](https://github.com/ai-dynamo/dynamo/blob/main/README.md#quick-start) for container setup and basic workflows.
 
 ## Documentation
 
@@ -35,13 +36,13 @@ User documentation on Dynamo features, APIs, and architecture is located in the 
 
 ## Contribution & Support
 
-- Follow [Contribution Guidelines](./CONTRIBUTING.md) (lines 1-94 in CONTRIBUTING.md)
+- Follow [Contribution Guidelines](./CONTRIBUTING.md)
 - Report issues via GitHub Discussions
 - Enterprise support available through NVIDIA AI Enterprise
 
 ## License
 
-Apache 2.0 licensed with third-party attributions documented in [ATTRIBUTIONS.md](./ATTRIBUTIONS.md) (lines 1-2656 in ATTRIBUTIONS.md)
+Apache 2.0 licensed with third-party attributions documented in [ATTRIBUTIONS.md](./ATTRIBUTIONS.md)
 
 > [!NOTE]
-> This project is currently in alpha stage - APIs and components may evolve based on community feedback (lines 34-38 in main README.md)
+> This project is currently in alpha stage - APIs and components may evolve based on community feedback
