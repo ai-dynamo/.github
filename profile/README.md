@@ -24,7 +24,7 @@ This GitHub organization hosts repositories for Dynamo's core components and int
 **[NVIDIA Optimized Transfer Library (NIXL)](https://github.com/ai-dynamo/nixl)**
 
 - Abstracts memory of heterogeneous devices, i.e., CPU, GPU, storage, and enables most efficient and low-latency communication among them
-- Integrates with distributed inference servers such as Dynamo. This library will target distributed inference communication patterns to effectively transfer the KV cache in disaggregated LLM serving platform.
+- Integrates with distributed inference servers such as Dynamo. This library will target distributed inference communication patterns to effectively transfer the KV cache in disaggregated LLM serving platforms.
 
 ## Getting Started
 
