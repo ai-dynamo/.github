@@ -42,7 +42,7 @@ User documentation on Dynamo features, APIs, and architecture is located in the 
 
 ## License
 
-Apache 2.0 licensed with third-party attributions documented in [ATTRIBUTIONS.md](./ATTRIBUTIONS.md)
+Apache 2.0 licensed with third-party attributions documented in [ATTRIBUTIONS.md](../ATTRIBUTIONS.md)
 
 > [!NOTE]
 > This project is currently in alpha stage - APIs and components may evolve based on community feedback
