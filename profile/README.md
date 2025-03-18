@@ -36,7 +36,7 @@ User documentation on Dynamo features, APIs, and architecture is located in the 
 
 ## Contribution & Support
 
-- Follow [Contribution Guidelines](./CONTRIBUTING.md)
+- Follow [Contribution Guidelines](../CONTRIBUTING.md)
 - Report issues via GitHub Discussions
 - Enterprise support available through NVIDIA AI Enterprise
 
