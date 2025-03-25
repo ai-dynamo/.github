@@ -45,4 +45,4 @@ User documentation on Dynamo features, APIs, and architecture is located in the 
 Apache 2.0 licensed with third-party attributions documented in each repository.
 
 > [!NOTE]
-> This project is currently in alpha stage - APIs and components may evolve based on community feedback
+> APIs and components may evolve based on community feedback
