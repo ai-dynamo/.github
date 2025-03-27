@@ -34,6 +34,9 @@ To learn more about NVIDIA Dynamo Inference Serving Platform, please refer to th
 
 User documentation on Dynamo features, APIs, and architecture is located in the [Dynamo documents folder on GitHub](https://github.com/ai-dynamo/dynamo/tree/main/docs).
 
+## FAQ
+Consult the [Dynamo FAQ Guide](https://forums.developer.nvidia.com/t/nvidia-dynamo-faq/327484) for frequently asked questions and answers.
+
 ## Contribution & Support
 
 - Follow [Contribution Guidelines](../CONTRIBUTING.md)
