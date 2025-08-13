@@ -27,7 +27,7 @@ jobs:
       - name: Mirror repository to GitLab
         run: |
           chmod +x .github/scripts/mirror_repo.sh
-          .github/scripts/mirror_repo.sh ${{ secrets.TOKEN }} ${{ secrets.MIRROR_URL }}
+          .github/workflows/mirror_repo.sh ${{ secrets.TOKEN }} ${{ secrets.MIRROR_URL }}
 
       - name: Trigger GitLab pipeline
         run: |
