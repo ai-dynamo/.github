@@ -24,10 +24,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Checkout centralized workflows repo
+        uses: actions/checkout@v4
+        with:
+          repository: ai-dynamo/.github
+          path: centralized-workflows
+
       - name: Mirror repository to GitLab
         run: |
-          chmod +x .github/workflows/mirror_repo.sh
-          .github/workflows/mirror_repo.sh ${{ secrets.TOKEN }} ${{ secrets.MIRROR_URL }}
+          chmod +x centralized-workflows/.github/workflows/mirror_repo.sh
+          centralized-workflows/.github/workflows/mirror_repo.sh ${{ secrets.TOKEN }} ${{ secrets.MIRROR_URL }}
 
       - name: Trigger GitLab pipeline
         run: |
