@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       ref:
-        description: 'Git reference (branch, tag) to trigger the internal pipeline for'
+        description: 'The Git ref (branch or tag) which is used to trigger the internal pipeline is passed by the repository invoking this centralized workflow.'
         required: true
         type: string
     secrets:
