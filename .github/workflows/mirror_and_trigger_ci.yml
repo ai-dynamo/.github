@@ -4,6 +4,7 @@ on:
   workflow_call:
     inputs:
       ref:
+        description: 'Git reference (branch, tag) to trigger the internal pipeline for'
         required: true
         type: string
     secrets:
@@ -32,8 +33,7 @@ jobs:
 
       - name: Mirror repository to GitLab
         run: |
-          chmod +x centralized-workflows/.github/workflows/mirror_repo.sh
-          centralized-workflows/.github/workflows/mirror_repo.sh ${{ secrets.TOKEN }} ${{ secrets.MIRROR_URL }}
+          ./centralized-workflows/.github/workflows/mirror_repo.sh ${{ secrets.TOKEN }} ${{ secrets.MIRROR_URL }}
 
       - name: Trigger GitLab pipeline
         run: |
