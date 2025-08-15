@@ -29,6 +29,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ai-dynamo/.github
+          ref: pvijayakrish/add-centralized-workflows
           path: centralized-workflows
 
       - name: Mirror repository to GitLab
