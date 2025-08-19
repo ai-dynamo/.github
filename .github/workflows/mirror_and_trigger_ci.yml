@@ -1,0 +1,47 @@
+name: Mirror and Trigger GitLab Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'The Git ref (branch or tag) which is used to trigger the internal pipeline is passed by the repository invoking this centralized workflow.'
+        required: true
+        type: string
+    secrets:
+      TOKEN:
+        required: true
+      MIRROR_URL:
+        required: true
+      PIPELINE_TOKEN:
+        required: true
+      PIPELINE_URL:
+        required: true
+
+jobs:
+  mirror_and_trigger:
+    runs-on: self-hosted
+    environment: GITLAB
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Checkout centralized workflows repo
+        uses: actions/checkout@v4
+        with:
+          repository: ai-dynamo/.github
+          ref: main
+          path: centralized-workflows
+
+      - name: Mirror repository to GitLab
+        run: |
+          ./centralized-workflows/.github/workflows/mirror_repo.sh ${{ secrets.TOKEN }} ${{ secrets.MIRROR_URL }}
+
+      - name: Trigger GitLab pipeline
+        run: |
+          echo "Triggering GitLab pipeline for ref: ${{ inputs.ref }}"
+
+          curl --fail-with-body \
+            --request POST \
+            --form token=${{ secrets.PIPELINE_TOKEN }} \
+            --form ref=${{ inputs.ref }} \
+            "${{ secrets.PIPELINE_URL }}"
