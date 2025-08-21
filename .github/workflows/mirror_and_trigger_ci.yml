@@ -19,7 +19,7 @@ on:
 
 jobs:
   mirror_and_trigger:
-    runs-on: self-hosted
+    runs-on: gitlab
     environment: GITLAB
     steps:
       - name: Checkout repo
