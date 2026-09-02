@@ -48,4 +48,4 @@ Consult the [Dynamo FAQ Guide](https://forums.developer.nvidia.com/t/nvidia-dyna
 Apache 2.0 licensed with third-party attributions documented in each repository.
 
 > [!NOTE]
-> This project is currently in alpha stage - APIs and components may evolve based on community feedback
+> APIs and components may evolve based on community feedback
