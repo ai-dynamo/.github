@@ -1,0 +1,212 @@
+name: 'Initialize Dynamo Builder'
+description: 'Route to shared BuildKit pods and bootstrap a docker buildx builder'
+
+# Shared by ai-dynamo/dynamo and ai-dynamo/kvcr. Consume it with:
+#
+#   - uses: ai-dynamo/.github/.github/actions/init-dynamo-builder@<sha>
+#     with:
+#       builder_name: my-builder
+#       flavor: vllm
+#       arch: linux/amd64
+#       namespace: ${{ vars.BUILDKIT_NAMESPACE }}
+#
+# How it works:
+#   1. route_buildkit.sh (next to this file) discovers live BuildKit pods through
+#      Kubernetes DNS and picks one per arch for the requested flavor.
+#   2. A buildx builder is created against the selected remote pod(s).
+#   3. If no remote pod is available (or fresh_builder is true), a Kubernetes-driver
+#      builder is created instead.
+#
+# The calling job must run on a runner inside the cluster that hosts the BuildKit
+# StatefulSets: pod discovery uses nslookup against <pod>.<svc>.<namespace>.svc.cluster.local,
+# and the job needs docker buildx plus nslookup (dnsutils/bind-tools) and sha256sum.
+#
+# Flavor -> cache group (see route_buildkit.sh for the algorithm). Flavors in the
+# same group share BuildKit pods and therefore Docker layer cache:
+#   - vllm, sglang:   group "vllm-sglang"
+#   - trtllm, triton: group "trtllm"
+#   - general:        group "general" (dynamo runtime, planner, frontend, operator, ...)
+#
+# Images built on top of a vLLM image (e.g. kvcr) should use flavor `vllm`.
+
+inputs:
+  builder_name:
+    description: 'Name for the buildx builder'
+    required: true
+  flavor:
+    description: 'BuildKit flavor (vllm, trtllm, sglang, triton, general)'
+    required: false
+    default: 'general'
+  arch:
+    description: 'Docker platform string: linux/amd64, linux/arm64, or linux/amd64,linux/arm64'
+    required: false
+    default: 'linux/amd64'
+  cuda_version:
+    description: 'CUDA version (13.0, 13.1). Accepted for compatibility; it does not affect routing.'
+    required: false
+    default: ''
+  fresh_builder:
+    description: 'Skip remote worker routing and always use the Kubernetes driver (fresh, isolated builder per run).'
+    required: false
+    default: 'false'
+  namespace:
+    description: 'Kubernetes namespace of the BuildKit pods (and of fallback pods)'
+    required: true
+
+  # Kubernetes driver (fallback) settings
+  ephemeral_storage:
+    description: 'Ephemeral storage request for Kubernetes driver'
+    required: false
+    default: '400Gi'
+  replicas:
+    description: 'Number of buildkit replicas'
+    required: false
+    default: '1'
+  requests_cpu:
+    description: 'CPU requests for buildkit pods'
+    required: false
+    default: '12'
+  requests_memory:
+    description: 'Memory requests for buildkit pods'
+    required: false
+    default: '26Gi'
+  limits_memory:
+    description: 'Memory limits for buildkit pods'
+    required: false
+    default: '29Gi'
+  tolerations:
+    description: 'Tolerations for buildkit pods'
+    required: false
+    default: "key=buildkit-fallback-worker,value=true,operator=Equal,effect=NoSchedule"
+
+outputs:
+  worker_addresses:
+    description: 'Comma-separated remote BuildKit addresses in use; empty when the Kubernetes driver is used'
+    value: ${{ steps.prepare.outputs.worker_addresses }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Route buildkit workers
+      id: route-buildkit
+      if: inputs.fresh_builder != 'true'
+      continue-on-error: true
+      shell: bash
+      env:
+        BUILDKIT_NAMESPACE: ${{ inputs.namespace }}
+        INPUT_ARCH: ${{ inputs.arch }}
+        INPUT_FLAVOR: ${{ inputs.flavor }}
+        INPUT_CUDA_VERSION: ${{ inputs.cuda_version }}
+      run: |
+        CUDA_ARGS=()
+        if [[ -n "$INPUT_CUDA_VERSION" ]]; then
+          CUDA_ARGS=(--cuda "$INPUT_CUDA_VERSION")
+        fi
+        # Strip linux/ prefix (e.g. linux/amd64,linux/arm64 -> amd64,arm64)
+        ARCH="${INPUT_ARCH//linux\//}"
+        if [[ "$ARCH" == *","* ]]; then
+          ROUTE_ARCH="all"
+        else
+          ROUTE_ARCH="$ARCH"
+        fi
+        echo "running with --arch ${ROUTE_ARCH} --flavor ${INPUT_FLAVOR} ${CUDA_ARGS[*]}"
+        bash "${{ github.action_path }}/route_buildkit.sh" --arch "$ROUTE_ARCH" --flavor "$INPUT_FLAVOR" "${CUDA_ARGS[@]}"
+
+    - name: Prepare worker addresses
+      id: prepare
+      if: inputs.fresh_builder != 'true'
+      shell: bash
+      env:
+        INPUT_ARCH: ${{ inputs.arch }}
+        AMD64_ADDRS: ${{ steps.route-buildkit.outputs[format('{0}_amd64', inputs.flavor)] }}
+        ARM64_ADDRS: ${{ steps.route-buildkit.outputs[format('{0}_arm64', inputs.flavor)] }}
+      run: |
+        ARCH="${INPUT_ARCH//linux\//}"
+        if [[ "$ARCH" == *","* ]]; then
+          # Multi-arch: combine both worker pools
+          ADDRS="${AMD64_ADDRS}${AMD64_ADDRS:+${ARM64_ADDRS:+,}}${ARM64_ADDRS}"
+        elif [[ "$ARCH" == "arm64" ]]; then
+          ADDRS="$ARM64_ADDRS"
+        else
+          ADDRS="$AMD64_ADDRS"
+        fi
+        echo "worker_addresses=${ADDRS}" >> "$GITHUB_OUTPUT"
+
+    - name: Define remote buildkit builder
+      if: inputs.fresh_builder != 'true' && steps.prepare.outputs.worker_addresses != ''
+      shell: bash
+      env:
+        BUILDER_NAME: ${{ inputs.builder_name }}
+        ADDRS: ${{ steps.prepare.outputs.worker_addresses }}
+      run: |
+        IFS=',' read -ra ADDR_LIST <<< "$ADDRS"
+        FIRST=true
+        for addr in "${ADDR_LIST[@]}"; do
+          if $FIRST; then
+            docker buildx create --use --name "$BUILDER_NAME" --driver remote "$addr"
+            FIRST=false
+          else
+            docker buildx create --append --name "$BUILDER_NAME" --driver remote "$addr"
+          fi
+        done
+
+    - name: Create Kubernetes fallback builder
+      if: inputs.fresh_builder == 'true' || steps.prepare.outputs.worker_addresses == ''
+      shell: bash
+      env:
+        BUILDER_NAME: ${{ inputs.builder_name }}
+        EPHEMERAL_STORAGE: ${{ inputs.ephemeral_storage }}
+        NAMESPACE: ${{ inputs.namespace }}
+        REPLICAS: ${{ inputs.replicas }}
+        REQUESTS_CPU: ${{ inputs.requests_cpu }}
+        REQUESTS_MEMORY: ${{ inputs.requests_memory }}
+        LIMITS_MEMORY: ${{ inputs.limits_memory }}
+        TOLERATIONS: ${{ inputs.tolerations }}
+        FRESH_BUILDER: ${{ inputs.fresh_builder }}
+      run: |
+        echo "🔨 Creating K8s builder."
+        create_k8s_builder() {
+          local mode=$1 arch=$2
+          docker buildx create "$mode" --name "$BUILDER_NAME" --driver kubernetes --platform="linux/${arch}" \
+            "--driver-opt=requests.ephemeral-storage=${EPHEMERAL_STORAGE}" \
+            "--driver-opt=namespace=${NAMESPACE}" \
+            "--driver-opt=loadbalance=sticky" \
+            "--driver-opt=replicas=${REPLICAS}" \
+            "--driver-opt=requests.cpu=${REQUESTS_CPU}" \
+            "--driver-opt=requests.memory=${REQUESTS_MEMORY}" \
+            "--driver-opt=limits.memory=${LIMITS_MEMORY}" \
+            "--driver-opt=\"nodeselector=kubernetes.io/arch=${arch},role=dynamo-builder-fallback\"" \
+            "--driver-opt=\"tolerations=${TOLERATIONS}\""
+        }
+        create_k8s_builder --use amd64
+        create_k8s_builder --append arm64
+
+        sleep 3 # Give the builders some time to be ready
+
+        if [[ "$FRESH_BUILDER" != "true" ]]; then
+          echo "::warning::Build is using fallback pod"
+          {
+            echo "## ⚠️ Fallback Build Warning"
+            echo "This build is using the **fallback pod** because the preferred remote builders are unavailable. Expected during nightly runs and outside business hours."
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    - name: Bootstrap buildkit
+      shell: bash
+      env:
+        BUILDER_NAME: ${{ inputs.builder_name }}
+      run: |
+        echo "Bootstrapping buildkit..."
+        for i in 1 2 3; do
+          if docker buildx inspect --bootstrap -- "$BUILDER_NAME"; then
+            echo "Bootstrap succeeded on attempt $i"
+            break
+          fi
+          if [ "$i" -eq 3 ]; then
+            echo "::error::Bootstrap failed after 3 attempts"
+            exit 1
+          fi
+          echo "::warning::Bootstrap attempt $i failed, retrying in 10s..."
+          sleep 10
+        done
