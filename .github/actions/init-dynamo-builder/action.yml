@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 name: 'Initialize Dynamo Builder'
 description: 'Route to shared BuildKit pods and bootstrap a docker buildx builder'
 

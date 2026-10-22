@@ -1,4 +1,6 @@
 #!/bin/bash -e
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 # Description: This script triggers a GitLab mirror update and waits for completion
 # Usage: ./update_gitlab_mirror.sh <gitlab_access_token> <gitlab_mirror_url>
 
